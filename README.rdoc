@@ -1,0 +1,11 @@
+= Git Player
+
+Play back git commits.
+
+== Author
+
+Mark McSpadden
+
+== Copyright
+
+Copyright (c) 2009 Mark McSpadden. See LICENSE for details.
