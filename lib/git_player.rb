@@ -14,8 +14,11 @@ class GitPlayer
     end
   end
   
+  def repo
+    @repo ||= Grit::Repo.new(repo_dir)
+  end
+  
   def play
-    repo = Grit::Repo.new(repo_dir)
     commits = repo.commits
     
     puts repo
