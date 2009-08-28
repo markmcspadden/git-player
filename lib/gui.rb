@@ -39,7 +39,9 @@ Shoes.app do
         if line =~ /^\+/
           line.slice!(0)
       
-          insert_after_stack = instance_variable_get("@a_stack_#{@last_line_changed}")
+          real_last_line_changed = @last_line_changed == 0 ? id : @last_line_changed
+      
+          insert_after_stack = instance_variable_get("@a_stack_#{real_last_line_changed}")
 
           insert_after_stack.append do 
             code_line(line)
@@ -50,9 +52,56 @@ Shoes.app do
     
       end # diff_lines
     end # animate
-  end
+  end # do_animation
+  
+  def load_commit(commit)
+    @date.replace commit.date
+    @author.replace commit.author.name
+    @message.replace commit.message
+    
+    commit.diffs.each_with_index do |diff, diff_idx|                
+      diff_lines = diff.diff.split("\n")
+      
+      @file_name.replace diff.a_path
+      
+      # chunks = diff_lines[2].gsub(/\s?@*\s?/, "")
+      # matches = chunks.match(/(.*?)(\d*),(\d*)(.*?)(\d*),(\d*)/)
+      # 
+      # a_action = matches[1]
+      # a_start = matches[2].to_i
+      # a_chunk_size = matches[3].to_i
+      # 
+      # b_action = matches[4]
+      # b_start = matches[5].to_i
+      # b_chunk_size = matches[6].to_i
+      # 
+      # a_lines = diff.a_blob.data.split("\n")
+      # 
+      # (a_start..a_start+a_chunk_size).to_a.each do |i|
+      #   a_lines[i-1] = em(a_lines[i-1].to_s)
+      # end
 
-  commit = commits[2]
+      @working_file.clear
+         
+      # Actually add a stack for each code line
+      diff.a_blob.data.split("\n").each_with_index do |line, idx|        
+        instance_variable_set("@a_stack_#{idx}", @working_file.append do
+          stack do
+            instance_variable_set("@a_#{idx}", code_line(line))
+          end
+        end)
+      end
+
+      @working_diffs.clear
+      
+      @working_diffs.append do
+        button("Commit #{commit.id} - Diff #{diff_idx}") do
+          do_animation(diff, diff_lines)
+        end
+      end
+              
+    end # commit    
+  end # do_commit
   
   flow do
     stack :width => "100%" do
@@ -60,42 +109,25 @@ Shoes.app do
     end # stack
     
     stack :width => "100%" do
-      @date = para commit.date
-      @author = para commit.author.name
-      @message = para commit.message
+      @date = para ""
+      @author = para ""
+      @message = para ""
+      @file_name = para ""
     end # stack
     
+    @working_file = stack do
+      
+    end
+    
+    @working_diffs = stack do
+      
+    end
+    
     stack :width => "100%", :margin => "10px" do
-      commit.diffs.each do |diff|        
-        diff_lines = diff.diff.split("\n")
-        
-        chunks = diff_lines[2].gsub(/\s?@*\s?/, "")
-        matches = chunks.match(/(.*?)(\d*),(\d*)(.*?)(\d*),(\d*)/)
-        
-        a_action = matches[1]
-        a_start = matches[2].to_i
-        a_chunk_size = matches[3].to_i
-        
-        b_action = matches[4]
-        b_start = matches[5].to_i
-        b_chunk_size = matches[6].to_i
-        
-        a_lines = diff.a_blob.data.split("\n")
-        
-        (a_start..a_start+a_chunk_size).to_a.each do |i|
-          a_lines[i-1] = em(a_lines[i-1].to_s)
+      commits.each do |commit|
+        button("Load Commit #{commit.id}") do
+          load_commit(commit)
         end
-        
-        diff.a_blob.data.split("\n").each_with_index do |line, idx|
-          instance_variable_set("@a_stack_#{idx}", stack do
-            instance_variable_set("@a_#{idx}", code_line(line))
-          end)
-        end
-        
-        button("DIFF 1") do
-          do_animation(diff, diff_lines)
-        end
-                
       end
       
     end # stack
