@@ -1,0 +1,74 @@
+<style>
+  .remove {
+    background-color: red;
+  }
+  .add {
+    background-color: green;
+  }
+</style>
+
+<%= @commit %><br/>
+<%= @commit.date %><br/>
+<%= @commit.author.name %><br/>
+<%= @commit.message %><br/>
+<br/>
+
+<code>
+<% idxx = 1 %>
+<% @commit.diffs.first.diff.split("\n")[3..-1].each do |line| %>
+  <span id="diff_<%= idxx %>"><%= line %></span><br/>
+  <% idxx += 1 %>
+<% end %>
+</code>
+
+<hr/>
+
+<code>
+<% idx = 1 %>
+<% @commit.diffs.first.a_blob.data.each_line do |line| %>
+  <span id="line_<%= idx %>"><%= line %></span><br/>
+  <% idx += 1 %>
+<% end %>
+</code>
+
+<% diff_lines = @commit.diffs.first.diff.split("\n")
+        
+        chunks = diff_lines[2].gsub(/\s?@*\s?/, "")
+        matches = chunks.match(/(.*?)(\d*),(\d*)(.*?)(\d*),(\d*)/)
+        
+        a_action = matches[1]
+        a_start = matches[2].to_i
+        a_chunk_size = matches[3].to_i
+        
+        b_action = matches[4]
+        b_start = matches[5].to_i
+        b_chunk_size = matches[6].to_i %>
+
+<script>
+  function doDiff() {
+    for(var i=1; i<=4; i++) {
+      var line = $('line_' + i);
+      if(line) {
+        var diff = $('diff_' + i);
+        if(diff && diff.innerHTML[0] == "-") {
+          line.addClassName("remove");
+          alert('wait');
+          Effect.Fade(line);
+          alert('wait');
+          diff2 = $('diff_' + (i+1));
+          alert('wait');
+          if(diff2 && diff2.innerHTML[0] == "+") {
+            line.update(diff2.innerHTML.substr(1));
+            line.removeClassName("remove");
+            Effect.Appear(line);
+            line.addClassName("add");
+            alert('wait');
+            line.removeClassName("add");
+          }
+        }
+      }
+    }
+  }
+</script>
+
+<%= link_to_function "Do Diff", "doDiff()" %>
