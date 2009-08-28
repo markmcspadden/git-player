@@ -11,11 +11,63 @@ gp = GitPlayer.new(:repo_dir => "/Users/mark/Development/git_player_test")
 commits = gp.play
 commits = commits.reverse
 
-def code_line(contents="")
-  para contents, :margin => 0
-end
+
 
 Shoes.app do
+  def code_line(contents="")
+    para contents, :margin => 0
+  end
+  
+  def do_animation(diff, diff_lines)
+    @last_line_changed = 0
+
+    @go = animate() do
+      diff_lines[2..-1].each do |line|
+    
+        if line =~ /^\-/
+          line.slice!(0)
+          diff.a_blob.data.split("\n").each_with_index do |a_line, idx|
+            if a_line == line
+              @last_line_changed = idx
+          
+              old_line = instance_variable_get("@a_#{idx}")
+      
+              alert("here")
+              
+              bold = false
+              every(1) do
+                if bold
+                  bold = false
+                  old_line.remove
+                else
+                  old_line.replace(strong(a_line))
+                  bold = true
+                end
+            
+                puts "here"
+              #alert("after here")
+              end
+              
+              sleep 5
+              
+            end
+          end
+        end
+                
+        if line =~ /^\+/
+          line.slice!(0)
+      
+          insert_after_stack = instance_variable_get("@a_stack_#{@last_line_changed}")
+
+          insert_after_stack.append do 
+            code_line(line)
+          end
+        end
+    
+      end # diff_lines
+    end # animate
+  end
+
   commit = commits[2]
   
   flow do
@@ -68,9 +120,37 @@ Shoes.app do
         button("#{diff.b_path}_diff") do
           @lines.replace diff.diff
         end
-        button("step1") do          
-          @lines.replace a_lines
-        end        
+        
+        diff.a_blob.data.split("\n").each_with_index do |line, idx|
+          instance_variable_set("@a_stack_#{idx}", stack do
+            instance_variable_set("@a_#{idx}", code_line(line))
+          end)
+        end
+        
+        diff.b_blob.data.split("\n").each_with_index do |line, idx|
+          @b_stack = stack :hidden => true do
+            instance_variable_set("@b_#{idx}", code_line(line))
+          end
+        end
+        
+        button("show b and hide a") do
+          @a_stack.hidden = true
+          @b_stack.hidden = false
+        end
+        
+
+        
+        button("diff step 1") do
+          do_animation(diff, diff_lines)
+        end
+        
+        button("do this") do        
+          @animation = animate() do          
+            @lines.replace "HI÷"
+            @animation.stop
+          end
+        end
+                
       end
       
     end # stack
